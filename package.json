@@ -1,0 +1,32 @@
+{
+  "name": "nexo-bot",
+  "version": "1.0.0",
+  "description": "Asistente de WhatsApp con IA para negocios: menú, citas y atención al cliente",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "chat": "node src/cli/index.js",
+    "deploy": "node scripts/desplegar.js",
+    "test": "node --test test/bot.test.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "gemini",
+    "cloud-run",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^9.4.0",
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0"
+  }
+}
