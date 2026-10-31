@@ -77,6 +77,41 @@ function dividirTexto(texto) {
 const esperar = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
 
 /**
+ * Formatos alternos de un mismo número. Meta puede guardar el destinatario de
+ * prueba con o sin el prefijo móvil de cada país (por ejemplo, México usa
+ * 521... y 52... para el mismo teléfono). Probamos ambos antes de rendirnos.
+ */
+export function variantesDestino(telefono) {
+  const base = String(telefono || '').replace(/\D/g, '');
+  if (!base) return [];
+
+  const variantes = [base];
+  const agregar = (valor) => {
+    if (valor && !variantes.includes(valor)) variantes.push(valor);
+  };
+
+  // México: 52 1 + 10 dígitos (móvil) frente a 52 + 10 dígitos.
+  if (/^521\d{10}$/.test(base)) agregar(`52${base.slice(3)}`);
+  if (/^52\d{10}$/.test(base)) agregar(`521${base.slice(2)}`);
+
+  // Argentina: 54 9 ... frente a 54 ...
+  if (/^549\d{10,11}$/.test(base)) agregar(`54${base.slice(3)}`);
+  if (/^54[1-9]\d{9,10}$/.test(base) && !base.startsWith('549')) {
+    agregar(`549${base.slice(2)}`);
+  }
+
+  // Brasil: 55 + área (2) + 9 + 8 dígitos frente a sin el 9.
+  if (/^55\d{2}9\d{8}$/.test(base)) {
+    agregar(`55${base.slice(2, 4)}${base.slice(5)}`);
+  }
+  if (/^55\d{2}\d{8}$/.test(base)) {
+    agregar(`55${base.slice(2, 4)}9${base.slice(4)}`);
+  }
+
+  return variantes;
+}
+
+/**
  * Envía texto por la Graph API. Devuelve true/false: nunca lanza, porque un
  * fallo de Meta no debe tumbar el webhook.
  */
@@ -87,42 +122,56 @@ export async function enviarTexto(telefono, texto) {
   }
 
   const url = `https://graph.facebook.com/${VERSION}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
-  const destino = String(telefono).replace(/\D/g, '');
+  const variantes = variantesDestino(telefono);
+  let indice = 0;
 
   for (const parte of dividirTexto(texto)) {
     let enviado = false;
 
-    for (let intento = 1; intento <= 2 && !enviado; intento += 1) {
-      try {
-        const respuesta = await fetch(url, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            recipient_type: 'individual',
-            to: destino,
-            type: 'text',
-            text: { preview_url: false, body: parte },
-          }),
-        });
+    while (!enviado && indice < variantes.length) {
+      const destino = variantes[indice];
 
-        if (respuesta.ok) {
-          enviado = true;
-          break;
+      for (let intento = 1; intento <= 2 && !enviado; intento += 1) {
+        try {
+          const respuesta = await fetch(url, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              recipient_type: 'individual',
+              to: destino,
+              type: 'text',
+              text: { preview_url: false, body: parte },
+            }),
+          });
+
+          if (respuesta.ok) {
+            enviado = true;
+            break;
+          }
+
+          const detalle = await respuesta.text();
+          const noPermitido =
+            respuesta.status === 400 && /131030|not in allowed list/i.test(detalle);
+
+          if (noPermitido && indice + 1 < variantes.length) {
+            console.warn('⚠️  WhatsApp: número no permitido; probando formato alterno.');
+            indice += 1;
+            break;
+          }
+
+          const reintentable = respuesta.status === 429 || respuesta.status >= 500;
+          console.error(`❌ WhatsApp ${respuesta.status}: ${detalle.slice(0, 300)}`);
+          if (!reintentable) return false;
+          await esperar(1200);
+        } catch (error) {
+          console.error('❌ Error de red con WhatsApp:', error.message);
+          if (intento === 2) return false;
+          await esperar(1200);
         }
-
-        const detalle = await respuesta.text();
-        const reintentable = respuesta.status === 429 || respuesta.status >= 500;
-        console.error(`❌ WhatsApp ${respuesta.status}: ${detalle.slice(0, 300)}`);
-        if (!reintentable) return false;
-        await esperar(1200);
-      } catch (error) {
-        console.error('❌ Error de red con WhatsApp:', error.message);
-        if (intento === 2) return false;
-        await esperar(1200);
       }
     }
 

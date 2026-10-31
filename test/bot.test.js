@@ -21,6 +21,7 @@ const {
   slotsDelDia,
   sumarDias,
 } = await import('../src/services/fechas.js');
+const { variantesDestino } = await import('../src/services/whatsapp.js');
 
 const siguienteDiaAbierto = () => {
   for (let dias = 1; dias <= 14; dias += 1) {
@@ -212,6 +213,16 @@ test('la demo y WhatsApp no comparten conversación', async () => {
   const enWhatsapp = await procesarMensaje({ telefono: sesion, texto: 'hola', canal: 'whatsapp' });
 
   assert.match(enWhatsapp.respuestas[0], /NEXO/);
+});
+
+test('variantes de destino para México, Argentina y Brasil', () => {
+  assert.deepEqual(variantesDestino('5213329777561'), ['5213329777561', '523329777561']);
+  assert.deepEqual(variantesDestino('523329777561'), ['523329777561', '5213329777561']);
+  assert.deepEqual(variantesDestino('5491123456789'), ['5491123456789', '541123456789']);
+  assert.deepEqual(variantesDestino('541123456789'), ['541123456789', '5491123456789']);
+  assert.deepEqual(variantesDestino('5511987654321'), ['5511987654321', '551187654321']);
+  assert.deepEqual(variantesDestino('551187654321'), ['551187654321', '5511987654321']);
+  assert.deepEqual(variantesDestino(''), []);
 });
 
 test('formato de fecha y hora en español', () => {

@@ -11,7 +11,10 @@ webhook de NEXO BOT en Cloud Run.
 
 ## 1. Crear la app en Meta
 
-1. Entra en [developers.facebook.com](https://developers.facebook.com) con tu cuenta de Facebook.
+> **Ojo:** `developers.facebook.com/products/whatsapp` es la página informativa del producto.
+> La configuración real está en el panel de apps: **[developers.facebook.com/apps](https://developers.facebook.com/apps)**.
+
+1. Entra en [developers.facebook.com/apps](https://developers.facebook.com/apps) con tu cuenta de Facebook.
 2. **My Apps → Create App**.
 3. Tipo de app: **Business**. Ponle un nombre, por ejemplo `NEXO BOT`.
 4. En el panel de la app, busca **WhatsApp → Set up** y agrega el producto.
@@ -82,13 +85,21 @@ Si la verificación falla:
 
 En Cloud Run verás los avisos si configuraste `OWNER_PHONE`.
 
+> **Error `131030` ("Recipient phone number not in allowed list"):** ocurre con el
+> número de prueba cuando Meta guardó el destinatario en un formato distinto al
+> que llega en el webhook (por ejemplo, México `52...` frente a `521...`). El bot
+> prueba automáticamente las variantes de México, Argentina y Brasil antes de
+> rendirse. Si aun así falla, agrega el número a **API Setup → To** en el formato
+> que aparece en el error.
+
 ## 6. Token permanente (producción)
 
 1. [business.facebook.com](https://business.facebook.com) → **Configuración del negocio**.
 2. **Usuarios → Usuarios del sistema → Agregar**.
 3. Crea un usuario del sistema con rol **Administrador**.
-4. **Agregar activos → Apps →** selecciona tu app → permiso completo.
-5. **Generar token** con estos permisos:
+4. **Agregar activos → Apps →** selecciona tu app → permiso completo. Repite en
+   **Cuentas de WhatsApp →** tu cuenta (incluida la de prueba) → permiso completo.
+5. **Generar token** con estos permisos y caducidad **Nunca**:
    - `whatsapp_business_messaging`
    - `whatsapp_business_management`
 6. Copia el token y actualízalo en Cloud Run:
