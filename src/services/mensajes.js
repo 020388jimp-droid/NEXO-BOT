@@ -49,10 +49,13 @@ O escribe *menú* para volver a las opciones.`;
 
 export function textoElegirServicio() {
   const lista = NEGOCIO.modalidades
-    .map((modalidad, indice) => `${indice + 1}. ${modalidad.nombre} (${modalidad.duracion} min)`)
-    .join('\n');
+    .map(
+      (modalidad, indice) =>
+        `${indice + 1}️⃣ ${modalidad.emoji || '📌'} *${modalidad.nombre}* (${modalidad.duracion} min)\n   ${modalidad.descripcion}`,
+    )
+    .join('\n\n');
 
-  return `¿Qué modalidad prefieres para la entrevista?\n\n${lista}\n\nResponde con el número.`;
+  return `*¿Qué modalidad prefieres para la entrevista?* 🤝\n\n${lista}\n\nResponde con el número.`;
 }
 
 export function textoPedirFecha() {
@@ -63,15 +66,19 @@ export function textoPedirNombre() {
   return '¿A nombre de quién agendo la cita? Escribe tu nombre completo.';
 }
 
+const EMOJIS_NUMERO = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+
 export function textoSlots(fecha, slots) {
-  const visibles = slots.slice(0, 12);
-  const lista = visibles.map((hora, indice) => `${indice + 1}. ${formatearHora(hora)}`).join('\n');
+  const visibles = slots.slice(0, 10);
+  const lista = visibles
+    .map((hora, indice) => `${EMOJIS_NUMERO[indice]} ${formatearHora(hora)}`)
+    .join('\n');
   const extra =
     slots.length > visibles.length
       ? `\n\nHay más horarios ese día. También puedes escribir la hora que prefieras (ej. *5:30 p. m.*).`
       : '';
 
-  return `*Horarios disponibles para el ${formatearFechaLarga(fecha)}*\n\n${lista}${extra}\n\nResponde con el número o escribe tu hora preferida.`;
+  return `*Horarios disponibles para el ${formatearFechaLarga(fecha)}* 📅\n\n${lista}${extra}\n\nResponde con el número o escribe tu hora preferida.`;
 }
 
 export function textoPedirMensaje() {
@@ -89,12 +96,30 @@ export function textoCVFormato() {
 
 export function textoProyectos() {
   const { proyectos } = NEGOCIO;
-  const lista = proyectos.map(
-    (proyecto, indice) =>
-      `${indice + 1}️⃣ *${proyecto.nombre}* (${proyecto.anio})\n   ${proyecto.descripcion}\n   🔗 ${proyecto.demo}`
-  ).join('\n\n');
+  const lista = proyectos
+    .map(
+      (proyecto, indice) =>
+        `${indice + 1}️⃣ ${proyecto.emoji || '📁'} *${proyecto.nombre}* (${proyecto.anio})\n   ${proyecto.resumen}`,
+    )
+    .join('\n\n');
 
-  return `*Proyectos destacados*\n\n${lista}\n\nEscribe el número para más detalles o *menú* para volver.`;
+  return `*Proyectos destacados* 🚀\n\n${lista}\n\nEscribe el número para ver el detalle de un proyecto o *menú* para volver.`;
+}
+
+export function textoProyectoDetalle(proyecto) {
+  const lineas = [
+    `${proyecto.emoji || '📁'} *${proyecto.nombre}* (${proyecto.anio})`,
+    '',
+    proyecto.descripcion,
+    '',
+    `🧰 Stack: ${proyecto.stack}`,
+  ];
+
+  if (proyecto.demo) lineas.push(`🔗 Demo: ${proyecto.demo}`);
+  if (proyecto.codigo) lineas.push(`💻 Código: ${proyecto.codigo}`);
+
+  lineas.push('', 'Escribe el número de otro proyecto, *proyectos* para ver la lista o *menú* para volver.');
+  return lineas.join('\n');
 }
 
 export function textoResumen(datos) {

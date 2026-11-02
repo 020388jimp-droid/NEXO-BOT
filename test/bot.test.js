@@ -211,6 +211,25 @@ test('el menú de CV envía el enlace de la versión elegida', async () => {
   assert.equal(r.estado, 'menu');
 });
 
+test('los proyectos muestran su detalle al elegir un número', async () => {
+  reiniciarAlmacenParaPruebas();
+  const telefono = '5215577777777';
+
+  let r = await procesarMensaje({ telefono, texto: '2' });
+  assert.match(r.respuestas[0], /Proyectos destacados/);
+  assert.equal(r.estado, 'proyectos_lista');
+
+  r = await procesarMensaje({ telefono, texto: '3' });
+  assert.match(r.respuestas[0], /NEXO BOT/);
+  assert.match(r.respuestas[0], /Stack:/);
+  assert.doesNotMatch(r.respuestas[0], /modalidad de la entrevista/i);
+  assert.equal(r.estado, 'proyectos_lista');
+
+  r = await procesarMensaje({ telefono, texto: '1' });
+  assert.match(r.respuestas[0], /Ciencia Cool/);
+  assert.match(r.respuestas[0], /github\.com\/020388jimp-droid/);
+});
+
 test('responde preguntas frecuentes sin IA', async () => {
   reiniciarAlmacenParaPruebas();
   const telefono = '5215544444444';

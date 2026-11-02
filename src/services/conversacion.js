@@ -461,6 +461,19 @@ async function enrutar(conversacion, texto, normalizado) {
         `Si quieres otra versión, escribe *CV*. Escribe *menú* para volver a las opciones.`,
       ];
     }
+    case ESTADOS.PROYECTOS_LISTA: {
+      const indiceProyecto = normalizado.match(/^([1-9])$/);
+      if (indiceProyecto) {
+        const proyecto = NEGOCIO.proyectos[Number(indiceProyecto[1]) - 1];
+        if (!proyecto) {
+          return [
+            `Ese número no está en la lista. Elige del 1 al ${NEGOCIO.proyectos.length} o escribe *menú*.`,
+          ];
+        }
+        return [mensajes.textoProyectoDetalle(proyecto)];
+      }
+      break;
+    }
     case ESTADOS.AVISAR_PROPIA:
       conversacion.estado = ESTADOS.MENU;
       conversacion.datos = {};
@@ -506,7 +519,7 @@ async function enrutar(conversacion, texto, normalizado) {
   }
 
   if (INTENCIONES.proyectos.test(normalizado)) {
-    conversacion.estado = ESTADOS.MENU;
+    conversacion.estado = ESTADOS.PROYECTOS_LISTA;
     return [mensajes.textoProyectos()];
   }
 
@@ -538,7 +551,7 @@ async function enrutar(conversacion, texto, normalizado) {
         conversacion.estado = ESTADOS.CV_FORMATO;
         return [mensajes.textoCVFormato()];
       case '2':
-        conversacion.estado = ESTADOS.MENU;
+        conversacion.estado = ESTADOS.PROYECTOS_LISTA;
         return [mensajes.textoProyectos()];
       case '3':
         return iniciarAgenda(conversacion);

@@ -10,6 +10,7 @@ const modalidadesBase = [
   {
     id: 'videollamada',
     nombre: 'Videollamada',
+    emoji: '🎥',
     duracion: 30,
     claves: ['videollamada', 'video', 'meet', 'zoom', 'llamada de video'],
     descripcion: 'Google Meet o Zoom. Te comparto el enlace al confirmar.',
@@ -18,6 +19,7 @@ const modalidadesBase = [
   {
     id: 'llamada',
     nombre: 'Llamada telefónica',
+    emoji: '📞',
     duracion: 20,
     claves: ['llamada', 'telefono', 'telefonica', 'marcar'],
     descripcion: 'Te llamo al número desde el que escribes.',
@@ -26,6 +28,7 @@ const modalidadesBase = [
   {
     id: 'mensaje',
     nombre: 'Entrevista por mensaje',
+    emoji: '💬',
     duracion: 30,
     claves: ['mensaje', 'whatsapp', 'chat', 'correo', 'email'],
     descripcion: 'Conversación por WhatsApp o correo, sin videollamada.',
@@ -37,6 +40,7 @@ const proyectosBase = [
   {
     id: 'ciencia-cool',
     nombre: 'Ciencia Cool',
+    emoji: '🧪',
     anio: '2026',
     resumen: 'Generación y publicación automática de video científico con IA.',
     descripcion:
@@ -48,6 +52,7 @@ const proyectosBase = [
   {
     id: 'worklish',
     nombre: 'Worklish',
+    emoji: '📚',
     anio: '2026',
     resumen: 'App de inglés profesional con tutor conversacional de IA.',
     descripcion:
@@ -59,6 +64,7 @@ const proyectosBase = [
   {
     id: 'nexo-bot',
     nombre: 'NEXO BOT',
+    emoji: '🤖',
     anio: '2026',
     resumen: 'Asistente de WhatsApp con IA para atención y agenda de entrevistas.',
     descripcion:
