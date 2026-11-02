@@ -10,8 +10,6 @@ citas, con el mismo motor en WhatsApp, web y consola.
 [![Firestore](https://img.shields.io/badge/Firestore-free%20tier-FFCA28?logo=firebase&logoColor=black)](https://cloud.google.com/firestore)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-![Demo de NEXO BOT](docs/screenshots/demo.png)
-
 **Demo en vivo:** https://nexo-bot-7jjwi3rg7q-uc.a.run.app/demo
 
 > La demo pública usa un negocio ficticio y está limitada por IP para no gastar la cuota gratuita
@@ -21,7 +19,7 @@ citas, con el mismo motor en WhatsApp, web y consola.
 
 ## Qué hace
 
-- **Menú interactivo** con opciones numeradas: servicios, agendar, consultar/cancelar cita y asesor.
+- **Menú interactivo** con opciones numeradas: CV, proyectos, agendar entrevista, perfil y mensajes.
 - **Agenda citas reales**: interpreta «mañana», «el viernes» o «30/10», muestra horarios libres,
   valida la zona horaria del negocio y evita dobles reservas.
 - **Responde preguntas con Gemini** usando el contexto del negocio, sin inventar precios ni horarios.
@@ -39,6 +37,7 @@ citas, con el mismo motor en WhatsApp, web y consola.
 | **Menú determinista + IA** | La IA conversa; el flujo crítico (citas) es código comprobable. Menos alucinaciones y menos latencia. |
 | **Adaptador de almacenamiento** | Firestore en producción, memoria en local y pruebas. Cambiar a Postgres es implementar una interfaz. |
 | **Fechas como texto local** (`YYYY-MM-DD` / `HH:mm`) | El servidor corre en UTC; el negocio no. Se evitan bugs de zona horaria y de horario de verano. |
+| **Múltiples CVs**: El bot ofrece hasta 6 versiones (3 CVs × 2 idiomas × 2 formatos) | Permite al reclutador elegir el formato y idioma que necesita. |
 
 ## Stack
 
@@ -54,12 +53,12 @@ citas, con el mismo motor en WhatsApp, web y consola.
 ## Cómo funciona
 
 ```
-WhatsApp ──webhook firmado──┐
+WhastApp ──webhook firmado──┐
 Demo web ──/api/demo────────┼──► motor de conversación ──► menú
 Consola  ──CLI──────────────┘            │                  ├── agenda / cancela citas
-                                         │                  └── FAQ
-                                         ├──► Gemini (con respaldo local)
-                                         └──► Firestore / memoria
+                                          │                  └── FAQ
+                                          ├──► Gemini (con respaldo por FAQ)
+                                          └──► Firestore / memoria
 ```
 
 1. Meta envía el mensaje al webhook y NEXO BOT valida la firma HMAC-SHA256.
@@ -86,7 +85,7 @@ src/
     whatsapp.js             Firma, envío, deduplicación y parseo del webhook
 public/                     Demo web, privacidad y términos
 scripts/desplegar.js        Despliegue idempotente en Cloud Run
-test/bot.test.js            11 pruebas del motor
+test/bot.test.js            12 pruebas del motor
 docs/
   WHATSAPP-META.md          Guía para conectar un número real
   CV.md                     Texto listo para el currículum
@@ -110,7 +109,7 @@ Otros comandos:
 
 ```bash
 npm run chat       # conversación en la terminal
-npm test           # 11 pruebas automatizadas
+npm test           # 12 pruebas automatizadas
 npm run deploy     # despliegue en Cloud Run
 ```
 
@@ -183,31 +182,12 @@ Cubren:
 - Horas como las escribe la gente («4», «4pm», «a las 11», «4 de la tarde»).
 - Horarios ocupados que no se ofrecen.
 - Bloqueo transaccional para que un horario no se reserve dos veces.
-- Flujo completo: menú → servicio → fecha → hora → nombre → confirmación.
+- Flujo completo: menú → CV → formato → descarga / servicio → fecha → hora → nombre → confirmación.
 - Cancelación con código, aunque el cliente envíe solo el código.
 - Reinicio con «menú».
 - Respaldo de preguntas frecuentes sin IA.
 - Aislamiento entre la demo y WhatsApp.
-
-## Detalles de ingeniería
-
-- **Webhook seguro:** firma HMAC-SHA256 sobre el cuerpo crudo, comparación en tiempo constante y
-  deduplicación por `message.id` porque Meta reintenta los eventos.
-- **Sin doble reserva:** además de revalidar antes de confirmar, cada bloque `fecha + hora` se
-  reserva en una transacción de Firestore. Dos confirmaciones simultáneas no pueden crear la misma cita.
-- **Zona horaria:** `Intl.DateTimeFormat` y cadenas locales; no se usan `Date` con offsets manuales.
-- **Resiliencia de IA:** timeout de 8 s, reintento ante 429/503, cadena de modelos y fallback FAQ.
-- **Rate limiting** por IP en la demo pública para proteger la cuota gratuita.
-- **Costo cero:** Cloud Run escala a cero, Firestore tiene 1 GiB gratis y Gemini tiene cuota gratuita.
-
-## Limitaciones y siguientes pasos
-
-- La demo pública no está conectada a un número real: para eso hay que crear la app de Meta
-  (20 minutos, ver la guía).
-- No incluye panel de administración; las citas se consultan por WhatsApp o en Firestore.
-- Los recordatorios proactivos requieren plantillas aprobadas por Meta (fuera de la ventana de 24 h).
-- Próximos pasos: panel de conversaciones, recordatorios, sincronización con Google Calendar,
-  multi-negocio y métricas de conversión.
+- 12 pruebas automatizadas.
 
 ## Costes
 
@@ -221,21 +201,34 @@ Cubren:
 
 ## Para el CV
 
-En **[docs/CV.md](docs/CV.md)** hay viñetas en español e inglés, palabras clave para ATS,
-preguntas de entrevista y un guion de 30 segundos para presentar el proyecto.
+En el menú del bot, los reclutadores pueden elegir:
+
+1. **Qué CV deseas descargar?** (1. Automation EN, 2. Automation ES, 3. Automation EN Word, 4. Automation ES Word, 5. Full-Stack EN PDF, 6. Full-Stack ES PDF, 7. Full-Stack EN Word, 8. Full-Stack ES Word)
+
+Cada uno tiene su URL en `public/cv/`. Los archivos son:
+
+- **Automation EN PDF**: `CV-Automation-EN.pdf`
+- **Automation EN Word**: `CV-Automation-EN.docx`
+- **Automation ES PDF**: `CV-Automation-ES.pdf`
+- **Automation ES Word**: `CV-Automation-ES.docx`
+- **Full-Stack EN PDF**: `CV-Full-Stack-EN.pdf`
+- **Full-Stack ES PDF**: `CV-Full-Stack-ES.pdf`
+- **Full-Stack EN Word**: `CV-Full-Stack-EN.docx`
+- **Full-Stack ES Word**: `CV-Full-Stack-ES.docx`
 
 ---
 
 ## English summary
 
-NEXO BOT is an AI-powered WhatsApp assistant for small businesses. It combines a deterministic
-menu with Gemini for open questions, books and cancels appointments with timezone-safe
-availability checks, and stores conversations in Firestore. The same engine powers the WhatsApp
-webhook, a web demo and a CLI. It runs on Google Cloud Run at zero cost within free tiers.
+NEXO BOT is an AI-powered WhatsApp assistant for job seekers. It combines a deterministic
+menu with Gemini for open questions, offers 6 CV download options (3 CVs × 2 languages × 2 formats),
+books and cancels appointments with timezone-safe availability checks, and stores conversations in
+Firestore. The same engine powers the WhatsApp webhook, a web demo and a CLI. It runs on Google
+Cloud Run at zero cost within free tiers.
 
 ```bash
 npm install && npm run dev     # http://localhost:8080/demo
-npm test                        # 11 tests
+npm test                        # 12 tests
 npm run deploy                  # Cloud Run
 ```
 

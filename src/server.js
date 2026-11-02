@@ -166,19 +166,20 @@ function textoDeAviso(evento, mensajeEntrante) {
   if (evento.tipo === 'nueva_cita') {
     const { cita } = evento;
     return [
-      '📅 *Nueva cita agendada*',
+      '📅 *Nueva entrevista agendada*',
       '',
       `• Cliente: ${cita.nombre}`,
-      `• Teléfono: ${cita.telefono}`,
-      `• Servicio: ${cita.servicio}`,
-      `• Fecha: ${cita.fecha} ${cita.hora}`,
-      `• Código: ${cita.codigo}`,
+    `• Empresa: ${cita.empresa || 'Por definir'}`,
+    `• Modalidad: ${cita.servicio}`,
+    `• Teléfono: ${cita.telefono}`,
+    `• Fecha: ${cita.fecha} ${cita.hora}`,
+    `• Código: ${cita.codigo}`,
     ].join('\n');
   }
 
   if (evento.tipo === 'cita_cancelada') {
     const { cita } = evento;
-    return `❌ *Cita cancelada*\n\n• ${cita.nombre} (${cita.telefono})\n• ${cita.servicio}\n• ${cita.fecha} ${cita.hora}\n• Código: ${cita.codigo}`;
+    return `❌ *Entrevista cancelada*\n\n• ${cita.nombre} (${cita.telefono})\n• ${cita.servicio}\n• ${cita.fecha} ${cita.hora}\n• Código: ${cita.codigo}`;
   }
 
   return `🙋 *Un cliente pide asesor*\n\n• Teléfono: ${evento.telefono || mensajeEntrante.de}\n• Nombre: ${evento.nombre || mensajeEntrante.nombre || 'No indicado'}\n• Último mensaje: ${mensajeEntrante.texto}`;

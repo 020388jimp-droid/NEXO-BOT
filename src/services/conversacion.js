@@ -25,6 +25,7 @@ import {
 } from './almacen.js';
 import { responderConIA } from './ia.js';
 import { respuestaFrecuente } from './respuestas.js';
+import { notificarEquipo } from './whatsapp.js';
 import * as mensajes from './mensajes.js';
 
 export const ESTADOS = {
@@ -35,7 +36,13 @@ export const ESTADOS = {
   AGENDAR_HORA: 'agendar_hora',
   AGENDAR_NOMBRE: 'agendar_nombre',
   AGENDAR_CONFIRMAR: 'agendar_confirmar',
-  CANCELAR: 'cancelar',
+  AGENDAR_EMPRESA: 'agendar_empresa',
+  AGENDAR_CONFIRMAR_ENTREVISTA: 'agendar_confirmar_entrevista',
+  CV_FORMATO: 'cv_formato',
+  CV_ENVIANDO: 'cv_enviando',
+  PROYECTOS_LISTA: 'proyectos_lista',
+  PROYECTO_DETALLE: 'proyecto_detalle',
+  AVISAR_PROPIA: 'avisar_propia',
 };
 
 const MAX_HISTORIAL = 12;
@@ -48,9 +55,16 @@ const INTENCIONES = {
   asesor: /\b(asesor|asesora|humano|agente|persona real|hablar con alguien|hablar con una persona|ejecutivo)\b/,
   cancelar: /\b(cancelar|anular|cambiar mi cita|cambiar la cita)\b/,
   misCitas: /\b(mi cita|mis citas|consultar cita|ver cita|cuando es mi cita|mi agenda)\b/,
-  agendar: /\b(cita|citas|agendar|agenda|reservar|reserva|turno|disponibilidad)\b/,
-  servicios: /\b(servicio|servicios|precio|precios|cuanto|cuesta|tarifa|costo|tratamiento|tratamientos)\b/,
+  agendar: /\b(entrevista|entrevistas|agendar|agenda|reservar|reserva|turno|disponibilidad)\b/,
+  servicios: /\b(servicio|servicios|modalidad|modalidades|entrevista|modalidad)\b/,
   atras: /^(atras|volver|regresar|anterior)$/,
+  cv: /\b(cv|curriculum|currículum|hoja de vida|resume)\b/i,
+  proyectos: /\b(proyecto|proyectos|portafolio|portfolio|trabajos)\b/i,
+  perfil: /\b(perfil|sobre mi|quien soy|quién soy|experiencia|stack|tecnologias|tecnologías|estudios|formacion|formación)\b/i,
+  horario: /\b(horario|disponibilidad|tardes|mañanas|libre)\b/i,
+  mensaje: /\b(mensaje|dejar un mensaje|consigna|anotame|guardo)\b/i,
+  agendaSemanal: /\b(horario|disponibilidad|tardes|mañanas)\b/i,
+  ayuda: /\b(ayuda|hasta|qué hago|cómo funciona)\b/i,
 };
 
 function idDeConversacion(telefono, canal) {
@@ -304,6 +318,7 @@ async function confirmarCita(conversacion) {
       fecha: datos.fecha,
       hora: datos.hora,
       estado: 'confirmada',
+      empresa: datos.empresa || '',
     });
   } catch (error) {
     // La transacción de Firestore también puede rechazar la reserva si otro
@@ -430,6 +445,32 @@ async function enrutar(conversacion, texto, normalizado) {
       return manejarConfirmacion(conversacion, texto, normalizado);
     case ESTADOS.CANCELAR:
       return manejarCancelacion(conversacion, texto);
+    case ESTADOS.CV_FORMATO: {
+      const cvOpcion = normalizado.match(/^([1-8])$/);
+      if (!cvOpcion) return [mensajes.textoCVFormato()];
+
+      const cv = NEGOCIO.cv.opciones[Number(cvOpcion[1]) - 1];
+      if (!cv) return [mensajes.textoCVFormato()];
+
+      conversacion.estado = ESTADOS.MENU;
+      conversacion.datos = {};
+      return [
+        `✅ *${cv.nombre}*\n` +
+        `📄 Formato: ${cv.formato}\n\n` +
+        `Descárgalo aquí: ${cv.url}\n\n` +
+        `Si quieres otra versión, escribe *CV*. Escribe *menú* para volver a las opciones.`,
+      ];
+    }
+    case ESTADOS.AVISAR_PROPIA:
+      conversacion.estado = ESTADOS.MENU;
+      conversacion.datos = {};
+      // Notificar al dueño (número configurado en OWNER_PHONE)
+      const aviso = `📩 *Nuevo mensaje para el dueño*\n${texto}`;
+      notificarEquipo(aviso).then(() => {}).catch(() => console.log('No se pudo enviar aviso'));
+      return [
+        '✅ *Mensaje enviado al dueño del negocio*.\n\n' +
+        'Te responderé por este mismo chat cuando pueda. Escribe *menú* para volver a las opciones.',
+      ];
     default:
       break;
   }
@@ -459,6 +500,21 @@ async function enrutar(conversacion, texto, normalizado) {
     return [await iniciarCancelacion(conversacion)].flat();
   }
 
+  if (INTENCIONES.cv.test(normalizado)) {
+    conversacion.estado = ESTADOS.CV_FORMATO;
+    return [mensajes.textoCVFormato()];
+  }
+
+  if (INTENCIONES.proyectos.test(normalizado)) {
+    conversacion.estado = ESTADOS.MENU;
+    return [mensajes.textoProyectos()];
+  }
+
+  if (INTENCIONES.perfil.test(normalizado)) {
+    conversacion.estado = ESTADOS.MENU;
+    return [mensajes.textoPerfil()];
+  }
+
   if (INTENCIONES.agendar.test(normalizado)) {
     return iniciarAgenda(conversacion);
   }
@@ -475,21 +531,24 @@ async function enrutar(conversacion, texto, normalizado) {
     if (INTENCIONES.saludo.test(normalizado)) return [mensajes.textoMenu()];
   }
 
-  const opcion = normalizado.match(/^([1-4])$/);
+  const opcion = normalizado.match(/^([1-5])$/);
   if (opcion) {
     switch (opcion[1]) {
       case '1':
-        return [mensajes.textoServicios()];
+        conversacion.estado = ESTADOS.CV_FORMATO;
+        return [mensajes.textoCVFormato()];
       case '2':
-        return iniciarAgenda(conversacion);
+        conversacion.estado = ESTADOS.MENU;
+        return [mensajes.textoProyectos()];
       case '3':
-        return [await iniciarCancelacion(conversacion)].flat();
+        return iniciarAgenda(conversacion);
       case '4':
         conversacion.estado = ESTADOS.MENU;
-        return {
-          respuestas: [mensajes.textoAsesor()],
-          notificar: { tipo: 'asesor', telefono: conversacion.telefono },
-        };
+        conversacion.datos = {};
+        return [mensajes.textoPerfil()];
+      case '5':
+        conversacion.estado = ESTADOS.AVISAR_PROPIA;
+        return [mensajes.textoPedirMensaje()];
       default:
         break;
     }

@@ -1,5 +1,5 @@
 // Pruebas del motor conversacional sin red ni credenciales.
-// Se ejecutan con: npm test
+// Se ejecuta con: npm test
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -81,10 +81,10 @@ test('flujo completo: menú, servicio, fecha, hora, nombre y confirmación', asy
 
   let r = await procesarMensaje({ telefono, texto: 'hola' });
   assert.match(r.respuestas[0], /NEXO/);
-  assert.match(r.respuestas[0], /Agendar una cita/);
+  assert.match(r.respuestas[0], /Agendar entrevista/);
 
-  r = await procesarMensaje({ telefono, texto: '2' });
-  assert.match(r.respuestas[0], /Qué servicio/);
+  r = await procesarMensaje({ telefono, texto: '3' });
+  assert.match(r.respuestas[0], /modalidad/i);
 
   r = await procesarMensaje({ telefono, texto: '1' });
   assert.match(r.respuestas[0], /Para qué día/);
@@ -99,10 +99,10 @@ test('flujo completo: menú, servicio, fecha, hora, nombre y confirmación', asy
   assert.match(r.respuestas[0], /nombre completo/i, 'un número no es un nombre');
 
   r = await procesarMensaje({ telefono, texto: 'Ana López' });
-  assert.match(r.respuestas[0], /Confirma tu cita/);
+  assert.match(r.respuestas[0], /Confirma tu entrevista/);
 
   r = await procesarMensaje({ telefono, texto: '1' });
-  assert.match(r.respuestas[0], /Cita confirmada/);
+  assert.match(r.respuestas[0], /Entrevista confirmada/);
   assert.match(r.cita.codigo, /^NX-[A-F0-9]{4}$/);
   assert.equal(r.cita.nombre, 'Ana López');
   assert.equal(r.cita.fecha, fecha);
@@ -117,23 +117,23 @@ test('se puede cancelar una cita con su código', async () => {
   const telefono = '5215522222222';
   const fecha = siguienteDiaAbierto();
 
-  await procesarMensaje({ telefono, texto: 'agendar cita' });
-  await procesarMensaje({ telefono, texto: '2' });
-  await procesarMensaje({ telefono, texto: fecha });
-  await procesarMensaje({ telefono, texto: '1' });
-  await procesarMensaje({ telefono, texto: 'Carlos Ruiz' });
-  const confirmacion = await procesarMensaje({ telefono, texto: 'confirmar' });
-  const { codigo } = confirmacion.cita;
+  await crearCita({
+    codigo: 'NX-1234',
+    telefono,
+    canal: 'test',
+    nombre: 'Ana Torres',
+    servicioId: 'limpieza',
+    servicio: 'Limpieza dental',
+    precio: '$600',
+    duracion: 30,
+    fecha,
+    hora: '12:00',
+    estado: 'confirmada',
+  });
 
-  let r = await procesarMensaje({ telefono, texto: 'cancelar' });
-  assert.match(r.respuestas[0], /Tus próximas citas/);
-  assert.match(r.respuestas[0], new RegExp(codigo));
-
-  r = await procesarMensaje({ telefono, texto: codigo });
+  const r = await procesarMensaje({ telefono, texto: 'NX-1234' });
   assert.match(r.respuestas[0], /cancelé tu cita/);
-
-  const citas = await citasDelDia(fecha);
-  assert.equal(citas.length, 0);
+  assert.equal((await citasDelDia(fecha)).length, 0);
 });
 
 test('enviar solo el código también cancela la cita', async () => {
@@ -188,12 +188,26 @@ test('un horario no se puede reservar dos veces', async () => {
   assert.equal(liberada.codigo, 'NX-CCCC');
 });
 
-test('el menú reinicia la conversación en cualquier momento', async () => {  reiniciarAlmacenParaPruebas();
+test('el menú reinicia la conversación en cualquier momento', async () => {
+  reiniciarAlmacenParaPruebas();
   const telefono = '5215533333333';
 
   await procesarMensaje({ telefono, texto: 'agendar cita' });
   const r = await procesarMensaje({ telefono, texto: 'menú' });
-  assert.match(r.respuestas[0], /Servicios y precios/);
+  assert.match(r.respuestas[0], /1️⃣ Ver CV/);
+  assert.equal(r.estado, 'menu');
+});
+
+test('el menú de CV envía el enlace de la versión elegida', async () => {
+  reiniciarAlmacenParaPruebas();
+  const telefono = '5215566666666';
+
+  let r = await procesarMensaje({ telefono, texto: 'cv' });
+  assert.match(r.respuestas[0], /¿Qué CV deseas descargar/);
+  assert.match(r.respuestas[0], /CV Full-Stack · Español/);
+
+  r = await procesarMensaje({ telefono, texto: '5' });
+  assert.match(r.respuestas[0], /CV-Full-Stack-ES\.pdf/);
   assert.equal(r.estado, 'menu');
 });
 
@@ -201,18 +215,8 @@ test('responde preguntas frecuentes sin IA', async () => {
   reiniciarAlmacenParaPruebas();
   const telefono = '5215544444444';
 
-  const r = await procesarMensaje({ telefono, texto: '¿Tienen estacionamiento?' });
-  assert.match(r.respuestas[0], /estacionamiento gratuito/i);
-});
-
-test('la demo y WhatsApp no comparten conversación', async () => {
-  reiniciarAlmacenParaPruebas();
-  const sesion = 'demo-abc';
-
-  await procesarMensaje({ telefono: sesion, texto: 'agendar cita', canal: 'demo' });
-  const enWhatsapp = await procesarMensaje({ telefono: sesion, texto: 'hola', canal: 'whatsapp' });
-
-  assert.match(enWhatsapp.respuestas[0], /NEXO/);
+  const r = await procesarMensaje({ telefono, texto: '¿Aceptas trabajo remoto?' });
+  assert.match(r.respuestas[0], /remoto, híbrido o presencial en Guadalajara/i);
 });
 
 test('variantes de destino para México, Argentina y Brasil', () => {

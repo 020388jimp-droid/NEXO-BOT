@@ -91,6 +91,39 @@ export function formatearHora(hhmm) {
   return minuto === 0 ? `${hora12}:00 ${sufijo}` : `${hora12}:${String(minuto).padStart(2, '0')} ${sufijo}`;
 }
 
+/** Convierte 'HH:mm' a minutos desde medianoche. */
+export function minutosDeHora(hhmm) {
+  const [hora, minuto] = String(hhmm).split(':').map(Number);
+  return Number(hora) * 60 + Number(minuto);
+}
+
+/**
+ * Interpreta un rango de atención escrito por el dueño:
+ * "15:00-18:00", "3pm a 6pm", "de 9 a 12" o "9:00 a. m. a 12:00 p. m.".
+ * Devuelve ['HH:mm', 'HH:mm'] o null si no es un rango válido.
+ */
+export function parsearRangoHorario(texto) {
+  const t = normalizar(texto)
+    .replace(/\b([ap])\.\s*m\.?/g, '$1m')
+    .replace(/^de\s+/, '')
+    .trim();
+  if (!t) return null;
+
+  const partes = t
+    .split(/\s*(?:-|–|a|hasta)\s*/)
+    .map((parte) => parte.trim())
+    .filter(Boolean);
+
+  if (partes.length !== 2) return null;
+
+  const inicio = parsearHora(partes[0]);
+  const fin = parsearHora(partes[1]);
+  if (!inicio || !fin) return null;
+  if (minutosDeHora(inicio) >= minutosDeHora(fin)) return null;
+
+  return [inicio, fin];
+}
+
 /**
  * Interpreta fechas en lenguaje natural.
  * Acepta: hoy, mañana, pasado mañana, "en 3 días", viernes, "el 30",
@@ -214,21 +247,34 @@ export function parsearHora(texto) {
 /** Bloques disponibles de un día, ya sin los ocupados ni los que ya pasaron. */
 export function slotsDelDia(
   fecha,
-  { ocupados = [], ahora = partesEnZona(), zona = ZONA, negocio = NEGOCIO } = {},
+  { ocupados = [], ahora = partesEnZona(), zona = ZONA, negocio = NEGOCIO, rangos = null } = {},
 ) {
   const { apertura, cierre, duracionCita } = negocio.horario;
   if (!esFechaValida(fecha)) return [];
   if (!negocio.horario.dias.includes(diaSemana(fecha))) return [];
 
+  const aMinutos = (valor) => (typeof valor === 'number' ? valor : minutosDeHora(valor));
+  const bloques = (rangos || [{ inicio: apertura * 60, fin: cierre * 60 }]).map((rango) =>
+    Array.isArray(rango)
+      ? { inicio: aMinutos(rango[0]), fin: aMinutos(rango[1]) }
+      : { inicio: aMinutos(rango.inicio), fin: aMinutos(rango.fin) },
+  );
+
   const ocupadosSet = new Set(ocupados);
+  const vistos = new Set();
   const slots = [];
-  for (let minuto = apertura * 60; minuto + duracionCita <= cierre * 60; minuto += duracionCita) {
-    const hora = `${String(Math.floor(minuto / 60)).padStart(2, '0')}:${String(minuto % 60).padStart(2, '0')}`;
-    const esHoy = fecha === ahora.fecha;
-    // Se pide media hora de margen para que la cita no se agende "ya".
-    if (esHoy && minuto < ahora.minutos + 30) continue;
-    if (ocupadosSet.has(hora)) continue;
-    slots.push(hora);
+
+  for (const bloque of bloques) {
+    for (let minuto = bloque.inicio; minuto + duracionCita <= bloque.fin; minuto += duracionCita) {
+      const hora = `${String(Math.floor(minuto / 60)).padStart(2, '0')}:${String(minuto % 60).padStart(2, '0')}`;
+      const esHoy = fecha === ahora.fecha;
+      // Se pide media hora de margen para que la cita no se agende "ya".
+      if (esHoy && minuto < ahora.minutos + 30) continue;
+      if (ocupadosSet.has(hora) || vistos.has(hora)) continue;
+      vistos.add(hora);
+      slots.push(hora);
+    }
   }
-  return slots;
+
+  return slots.sort((a, b) => minutosDeHora(a) - minutosDeHora(b));
 }

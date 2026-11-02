@@ -84,6 +84,7 @@ const CLAVES_DESPLIEGUE = [
   'META_API_VERSION',
   'OWNER_PHONE',
   'DEMO_MAX_MENSAJES',
+  'PUBLIC_URL',
 ];
 
 function archivoDeVariables() {

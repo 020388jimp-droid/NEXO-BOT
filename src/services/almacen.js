@@ -13,6 +13,7 @@ const memoria = {
   conversaciones: new Map(),
   citas: new Map(),
   bloqueos: new Set(),
+  horarioTardes: {},
 };
 
 let backend = null;
@@ -91,11 +92,19 @@ const almacenMemoria = {
   async totalCitas() {
     return memoria.citas.size;
   },
+  async obtenerHorarioTardes() {
+    return clonar(memoria.horarioTardes);
+  },
+  async guardarHorarioTardes(tardes) {
+    memoria.horarioTardes = clonar(tardes || {});
+    return clonar(memoria.horarioTardes);
+  },
 };
 
 const COLECCION_CONVERSACIONES = 'conversaciones';
 const COLECCION_CITAS = 'citas';
 const COLECCION_AGENDA = 'agenda';
+const COLECCION_CONFIG = 'config';
 
 function almacenFirestore(db) {
   return {
@@ -200,6 +209,18 @@ function almacenFirestore(db) {
     async totalCitas() {
       const snap = await db.collection(COLECCION_CITAS).count().get();
       return snap.data().count;
+    },
+    async obtenerHorarioTardes() {
+      const doc = await db.collection(COLECCION_CONFIG).doc('horario').get();
+      if (!doc.exists) return {};
+      return doc.data()?.tardes || {};
+    },
+    async guardarHorarioTardes(tardes) {
+      await db
+        .collection(COLECCION_CONFIG)
+        .doc('horario')
+        .set({ tardes: tardes || {}, actualizadoEn: Date.now() }, { merge: true });
+      return tardes || {};
     },
   };
 }

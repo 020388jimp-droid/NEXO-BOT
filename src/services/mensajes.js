@@ -6,40 +6,61 @@ import { formatearFechaLarga, formatearHora } from './fechas.js';
 
 export function textoMenu({ saludo = true } = {}) {
   const encabezado = saludo
-    ? `¡Hola! 👋 Soy *NEXO*, el asistente virtual de *${NEGOCIO.nombre}*.`
+    ? `¡Hola! 👋 Soy *NEXO*, el asistente profesional de *${NEGOCIO.nombre}*.`
     : '¿Qué más puedo hacer por ti?';
 
   return `${encabezado}
 
-1️⃣ Servicios y precios
-2️⃣ Agendar una cita
-3️⃣ Consultar o cancelar mi cita
-4️⃣ Hablar con un asesor
+1️⃣ Ver CV (PDF o Word)
+2️⃣ Proyectos y portafolio
+3️⃣ Agendar entrevista
+4️⃣ Perfil y preguntas frecuentes
+5️⃣ Dejar un mensaje
 
-Responde con el número de la opción o escríbeme tu duda.`;
+Responde con el número de la opción o escríbeme tu consulta.`;
 }
 
 export function textoServicios() {
-  const lista = NEGOCIO.servicios
-    .map(
-      (servicio) =>
-        `• *${servicio.nombre}* — ${servicio.precioTexto}\n  ${servicio.duracion} min · ${servicio.descripcion}`,
-    )
+  const lista = NEGOCIO.modalidades
+    .map((modalidad) => `• *${modalidad.nombre}*, ${modalidad.duracion} min\n  ${modalidad.descripcion}`)
     .join('\n\n');
 
-  return `*Servicios y precios*\n\n${lista}\n\nEscribe *cita* cuando quieras agendar. 📅`;
+  return `*Modalidades de entrevista*\n\n${lista}\n\nEscribe *entrevista* para agendar. 📅`;
+}
+
+export function textoPerfil() {
+  return `*Perfil profesional* 👨‍💻
+
+*${NEGOCIO.nombre}*
+${NEGOCIO.rol}
+📍 ${NEGOCIO.ubicacion}
+📞 ${NEGOCIO.telefono}
+✉️ ${NEGOCIO.correo}
+🔗 ${NEGOCIO.linkedin}
+
+Pregúntame lo que necesites, por ejemplo:
+• ¿Aceptas trabajo remoto?
+• ¿Qué experiencia tienes?
+• ¿Qué proyectos has hecho?
+• ¿Cómo te contacto?
+
+O escribe *menú* para volver a las opciones.`;
 }
 
 export function textoElegirServicio() {
-  const lista = NEGOCIO.servicios
-    .map((servicio, indice) => `${indice + 1}. ${servicio.nombre} — ${servicio.precioTexto} (${servicio.duracion} min)`)
+  const lista = NEGOCIO.modalidades
+    .map((modalidad, indice) => `${indice + 1}. ${modalidad.nombre} (${modalidad.duracion} min)`)
     .join('\n');
 
-  return `¿Qué servicio necesitas?\n\n${lista}\n\nResponde con el número.`;
+  return `¿Qué modalidad prefieres para la entrevista?\n\n${lista}\n\nResponde con el número.`;
 }
 
 export function textoPedirFecha() {
   return '¿Para qué día te gustaría? 📅\n\nPuedes escribir *mañana*, *viernes* o una fecha como *30/10*.';
+}
+
+export function textoPedirNombre() {
+  return '¿A nombre de quién agendo la cita? Escribe tu nombre completo.';
 }
 
 export function textoSlots(fecha, slots) {
@@ -53,18 +74,38 @@ export function textoSlots(fecha, slots) {
   return `*Horarios disponibles para el ${formatearFechaLarga(fecha)}*\n\n${lista}${extra}\n\nResponde con el número o escribe tu hora preferida.`;
 }
 
-export function textoPedirNombre() {
-  return '¿A nombre de quién agendo la cita? Escribe tu nombre completo.';
+export function textoPedirMensaje() {
+  return 'Cuéntame qué mensaje quieres dejar. Lo recibirás el dueño del negocio.';
+}
+
+export function textoCVFormato() {
+  const { cv } = NEGOCIO;
+  const lista = cv.opciones.map(
+    (opcion, indice) => `${indice + 1}️⃣ ${opcion.nombre} ${opcion.formato}`
+  ).join('\n\n');
+
+  return `*¿Qué CV deseas descargar?* 📄\n\n${lista}\n\nResponde con el número.`;
+}
+
+export function textoProyectos() {
+  const { proyectos } = NEGOCIO;
+  const lista = proyectos.map(
+    (proyecto, indice) =>
+      `${indice + 1}️⃣ *${proyecto.nombre}* (${proyecto.anio})\n   ${proyecto.descripcion}\n   🔗 ${proyecto.demo}`
+  ).join('\n\n');
+
+  return `*Proyectos destacados*\n\n${lista}\n\nEscribe el número para más detalles o *menú* para volver.`;
 }
 
 export function textoResumen(datos) {
-  return `*Confirma tu cita* ✅
+  return `*Confirma tu entrevista* ✅
 
-• Servicio: ${datos.servicio}
+• Modalidad: ${datos.servicio}
 • Fecha: ${formatearFechaLarga(datos.fecha)}
 • Hora: ${formatearHora(datos.hora)}
 • Duración: ${datos.duracion} min
 • Nombre: ${datos.nombre}
+• Empresa: ${datos.empresa || 'Por definir'}
 
 1️⃣ Confirmar
 2️⃣ Cambiar la fecha
@@ -74,10 +115,11 @@ Responde con el número.`;
 }
 
 export function textoCitaConfirmada(cita) {
-  return `✅ *Cita confirmada*
+  return `✅ *Entrevista confirmada* ✅
 
 • Código: *${cita.codigo}*
-• Servicio: ${cita.servicio}
+• Modalidad: ${cita.servicio}
+• Empresa: ${cita.empresa || 'Por definir'}
 • Fecha: ${formatearFechaLarga(cita.fecha)}
 • Hora: ${formatearHora(cita.hora)}
 • Lugar: ${NEGOCIO.direccion}
@@ -120,7 +162,7 @@ export function textoAsesor() {
 }
 
 export function textoNoEntendi() {
-  return `No estoy seguro de eso. 🤔\n\nPuedo ayudarte con *servicios*, *precios* o *agendar una cita*. Escribe *menú* para ver las opciones o *asesor* para hablar con una persona.`;
+  return `No estoy seguro de haber entendido. 🤔\n\nPuedo compartirte el *CV*, mis *proyectos* o *agendar una entrevista*. Escribe *menú* para ver las opciones.`;
 }
 
 export function textoFueraDeHorario() {
