@@ -35,9 +35,9 @@ export const ESTADOS = {
   AGENDAR_FECHA: 'agendar_fecha',
   AGENDAR_HORA: 'agendar_hora',
   AGENDAR_NOMBRE: 'agendar_nombre',
-  AGENDAR_CONFIRMAR: 'agendar_confirmar',
   AGENDAR_EMPRESA: 'agendar_empresa',
-  AGENDAR_CONFIRMAR_ENTREVISTA: 'agendar_confirmar_entrevista',
+  AGENDAR_VACANTE: 'agendar_vacante',
+  AGENDAR_CONFIRMAR: 'agendar_confirmar',
   CV_FORMATO: 'cv_formato',
   CV_ENVIANDO: 'cv_enviando',
   PROYECTOS_LISTA: 'proyectos_lista',
@@ -55,12 +55,12 @@ const INTENCIONES = {
   asesor: /\b(asesor|asesora|humano|agente|persona real|hablar con alguien|hablar con una persona|ejecutivo)\b/,
   cancelar: /\b(cancelar|anular|cambiar mi cita|cambiar la cita)\b/,
   misCitas: /\b(mi cita|mis citas|consultar cita|ver cita|cuando es mi cita|mi agenda)\b/,
-  agendar: /\b(entrevista|entrevistas|agendar|agenda|reservar|reserva|turno|disponibilidad)\b/,
+  agendar: /\b(entrevista|entrevistas|agendar|agenda|reservar|reserva|turno|disponibilidad|cita|citas)\b/,
   servicios: /\b(servicio|servicios|modalidad|modalidades|entrevista|modalidad)\b/,
   atras: /^(atras|volver|regresar|anterior)$/,
   cv: /\b(cv|curriculum|currículum|hoja de vida|resume)\b/i,
   proyectos: /\b(proyecto|proyectos|portafolio|portfolio|trabajos)\b/i,
-  perfil: /\b(perfil|sobre mi|quien soy|quién soy|experiencia|stack|tecnologias|tecnologías|estudios|formacion|formación)\b/i,
+  perfil: /\b(perfil|sobre ti|sobre mi|quien eres|quién eres|quien soy|quién soy)\b/i,
   horario: /\b(horario|disponibilidad|tardes|mañanas|libre)\b/i,
   mensaje: /\b(mensaje|dejar un mensaje|consigna|anotame|guardo)\b/i,
   agendaSemanal: /\b(horario|disponibilidad|tardes|mañanas)\b/i,
@@ -149,6 +149,10 @@ function preguntaPendiente(conversacion) {
         : mensajes.textoPedirFecha();
     case ESTADOS.AGENDAR_NOMBRE:
       return mensajes.textoPedirNombre();
+    case ESTADOS.AGENDAR_EMPRESA:
+      return mensajes.textoPedirEmpresa();
+    case ESTADOS.AGENDAR_VACANTE:
+      return mensajes.textoPedirVacante();
     case ESTADOS.AGENDAR_CONFIRMAR:
       return mensajes.textoResumen(datos);
     case ESTADOS.CANCELAR:
@@ -250,6 +254,37 @@ function manejarNombre(conversacion, texto) {
   }
 
   conversacion.datos.nombre = nombre.slice(0, 80);
+  conversacion.estado = ESTADOS.AGENDAR_EMPRESA;
+  return [mensajes.textoPedirEmpresa()];
+}
+
+function limpiarTextoLibre(texto, maximo) {
+  return String(texto || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maximo);
+}
+
+function manejarEmpresa(conversacion, texto) {
+  const empresa = limpiarTextoLibre(texto, 80);
+
+  if (empresa.length < 2) {
+    return ['¿De qué empresa eres? 🏢 Escribe el nombre de la empresa (o *particular*).'];
+  }
+
+  conversacion.datos.empresa = empresa;
+  conversacion.estado = ESTADOS.AGENDAR_VACANTE;
+  return [mensajes.textoPedirVacante()];
+}
+
+function manejarVacante(conversacion, texto) {
+  const vacante = limpiarTextoLibre(texto, 100);
+
+  if (vacante.length < 2) {
+    return ['¿Para qué vacante estás reclutando? 💼 Escribe el puesto o el área.'];
+  }
+
+  conversacion.datos.vacante = vacante;
   conversacion.estado = ESTADOS.AGENDAR_CONFIRMAR;
   return [mensajes.textoResumen(conversacion.datos)];
 }
@@ -319,6 +354,7 @@ async function confirmarCita(conversacion) {
       hora: datos.hora,
       estado: 'confirmada',
       empresa: datos.empresa || '',
+      vacante: datos.vacante || '',
     });
   } catch (error) {
     // La transacción de Firestore también puede rechazar la reserva si otro
@@ -405,9 +441,18 @@ async function enrutar(conversacion, texto, normalizado) {
       case ESTADOS.AGENDAR_NOMBRE:
         conversacion.estado = ESTADOS.AGENDAR_HORA;
         return [mensajes.textoSlots(conversacion.datos.fecha, conversacion.datos.slots || [])];
-      case ESTADOS.AGENDAR_CONFIRMAR:
+      case ESTADOS.AGENDAR_EMPRESA:
+        delete conversacion.datos.nombre;
         conversacion.estado = ESTADOS.AGENDAR_NOMBRE;
         return [mensajes.textoPedirNombre()];
+      case ESTADOS.AGENDAR_VACANTE:
+        delete conversacion.datos.empresa;
+        conversacion.estado = ESTADOS.AGENDAR_EMPRESA;
+        return [mensajes.textoPedirEmpresa()];
+      case ESTADOS.AGENDAR_CONFIRMAR:
+        delete conversacion.datos.vacante;
+        conversacion.estado = ESTADOS.AGENDAR_VACANTE;
+        return [mensajes.textoPedirVacante()];
       default:
         conversacion.estado = ESTADOS.MENU;
         conversacion.datos = {};
@@ -441,6 +486,10 @@ async function enrutar(conversacion, texto, normalizado) {
       return manejarHora(conversacion, texto, normalizado);
     case ESTADOS.AGENDAR_NOMBRE:
       return manejarNombre(conversacion, texto);
+    case ESTADOS.AGENDAR_EMPRESA:
+      return manejarEmpresa(conversacion, texto);
+    case ESTADOS.AGENDAR_VACANTE:
+      return manejarVacante(conversacion, texto);
     case ESTADOS.AGENDAR_CONFIRMAR:
       return manejarConfirmacion(conversacion, texto, normalizado);
     case ESTADOS.CANCELAR:

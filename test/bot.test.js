@@ -99,12 +99,22 @@ test('flujo completo: menú, servicio, fecha, hora, nombre y confirmación', asy
   assert.match(r.respuestas[0], /nombre completo/i, 'un número no es un nombre');
 
   r = await procesarMensaje({ telefono, texto: 'Ana López' });
+  assert.match(r.respuestas[0], /De qué empresa eres/);
+
+  r = await procesarMensaje({ telefono, texto: 'Tech Corp' });
+  assert.match(r.respuestas[0], /Qué vacante|vacante o puesto/i);
+
+  r = await procesarMensaje({ telefono, texto: 'Desarrollador Full-Stack' });
   assert.match(r.respuestas[0], /Confirma tu entrevista/);
+  assert.match(r.respuestas[0], /Tech Corp/);
+  assert.match(r.respuestas[0], /Desarrollador Full-Stack/);
 
   r = await procesarMensaje({ telefono, texto: '1' });
   assert.match(r.respuestas[0], /Entrevista confirmada/);
   assert.match(r.cita.codigo, /^NX-[A-F0-9]{4}$/);
   assert.equal(r.cita.nombre, 'Ana López');
+  assert.equal(r.cita.empresa, 'Tech Corp');
+  assert.equal(r.cita.vacante, 'Desarrollador Full-Stack');
   assert.equal(r.cita.fecha, fecha);
 
   const citas = await citasDelDia(fecha);
@@ -228,6 +238,30 @@ test('los proyectos muestran su detalle al elegir un número', async () => {
   r = await procesarMensaje({ telefono, texto: '1' });
   assert.match(r.respuestas[0], /Ciencia Cool/);
   assert.match(r.respuestas[0], /github\.com\/020388jimp-droid/);
+});
+
+test('escribir cita inicia el agendamiento', async () => {
+  reiniciarAlmacenParaPruebas();
+  const telefono = '5215591919191';
+
+  const r = await procesarMensaje({ telefono, texto: 'cita' });
+  assert.match(r.respuestas[0], /modalidad/i);
+  assert.equal(r.estado, 'agendar_servicio');
+});
+
+test('las preguntas del perfil se responden sin repetir la ficha', async () => {
+  reiniciarAlmacenParaPruebas();
+  const telefono = '5215588888888';
+
+  let r = await procesarMensaje({ telefono, texto: '4' });
+  assert.match(r.respuestas[0], /Perfil profesional/);
+
+  r = await procesarMensaje({ telefono, texto: '¿Qué experiencia tienes?' });
+  assert.doesNotMatch(r.respuestas[0], /Perfil profesional/);
+  assert.match(r.respuestas[0], /Más de tres años/);
+
+  r = await procesarMensaje({ telefono, texto: '¿Qué stack dominas?' });
+  assert.doesNotMatch(r.respuestas[0], /Perfil profesional/);
 });
 
 test('responde preguntas frecuentes sin IA', async () => {

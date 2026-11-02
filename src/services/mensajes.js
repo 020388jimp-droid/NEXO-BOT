@@ -122,6 +122,14 @@ export function textoProyectoDetalle(proyecto) {
   return lineas.join('\n');
 }
 
+export function textoPedirEmpresa() {
+  return '¿De qué empresa eres? 🏢\n\nEscribe el nombre de la empresa o *particular* si aplica.';
+}
+
+export function textoPedirVacante() {
+  return '¿Para qué vacante o puesto estás reclutando? 💼\n\nEjemplo: *Desarrollador Full-Stack* o *Automatización con IA*.';
+}
+
 export function textoResumen(datos) {
   return `*Confirma tu entrevista* ✅
 
@@ -131,6 +139,7 @@ export function textoResumen(datos) {
 • Duración: ${datos.duracion} min
 • Nombre: ${datos.nombre}
 • Empresa: ${datos.empresa || 'Por definir'}
+• Vacante: ${datos.vacante || 'Por definir'}
 
 1️⃣ Confirmar
 2️⃣ Cambiar la fecha
@@ -145,6 +154,7 @@ export function textoCitaConfirmada(cita) {
 • Código: *${cita.codigo}*
 • Modalidad: ${cita.servicio}
 • Empresa: ${cita.empresa || 'Por definir'}
+• Vacante: ${cita.vacante || 'Por definir'}
 • Fecha: ${formatearFechaLarga(cita.fecha)}
 • Hora: ${formatearHora(cita.hora)}
 • Lugar: ${NEGOCIO.direccion}
