@@ -1,7 +1,8 @@
 # NEXO BOT
 
-Asistente de WhatsApp con IA para negocios: menú interactivo, preguntas frecuentes y agenda de
-citas, con el mismo motor en WhatsApp, web y consola.
+Asistente de WhatsApp con IA para búsqueda de empleo: los reclutadores descargan tu CV en PDF o
+Word (español/inglés), exploran tu portafolio y agendan una entrevista indicando empresa y vacante.
+El mismo motor responde en WhatsApp, en la web y en la consola.
 
 [![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Gemini](https://img.shields.io/badge/Google-Gemini-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
@@ -10,22 +11,50 @@ citas, con el mismo motor en WhatsApp, web y consola.
 [![Firestore](https://img.shields.io/badge/Firestore-free%20tier-FFCA28?logo=firebase&logoColor=black)](https://cloud.google.com/firestore)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Demo en vivo:** https://nexo-bot-7jjwi3rg7q-uc.a.run.app/demo
+**Demo en vivo:** https://nexo-bot-271857970093.us-central1.run.app/demo<br>
+**Repositorio:** https://github.com/020388jimp-droid/NEXO-BOT
 
-> La demo pública usa un negocio ficticio y está limitada por IP para no gastar la cuota gratuita
-> de Gemini. No agendes citas reales.
+> La demo pública usa el mismo motor y el mismo perfil que el bot real. Está limitada por IP para
+> no gastar la cuota gratuita de Gemini y sus conversaciones están aisladas de WhatsApp.
+
+---
+
+## Capturas
+
+![Demo de NEXO BOT](docs/screenshots/demo.png)
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/flujo-cv.png" width="250" alt="Menú de CV en PDF y Word"></td>
+    <td><img src="docs/screenshots/flujo-proyectos.png" width="250" alt="Lista de proyectos"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>CV en PDF o Word (8 versiones)</sub></td>
+    <td align="center"><sub>Portafolio navegable</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/flujo-entrevista.png" width="250" alt="Flujo de entrevista: empresa"></td>
+    <td><img src="docs/screenshots/flujo-vacante.png" width="250" alt="Flujo de entrevista: vacante"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Empresa</sub></td>
+    <td align="center"><sub>Vacante</sub></td>
+  </tr>
+</table>
 
 ---
 
 ## Qué hace
 
-- **Menú interactivo** con opciones numeradas: CV, proyectos, agendar entrevista, perfil y mensajes.
-- **Agenda citas reales**: interpreta «mañana», «el viernes» o «30/10», muestra horarios libres,
-  valida la zona horaria del negocio y evita dobles reservas.
-- **Responde preguntas con Gemini** usando el contexto del negocio, sin inventar precios ni horarios.
+- **Menú interactivo** con opciones numeradas y emojis: CV, proyectos, agendar entrevista, perfil y mensajes.
+- **CV en 8 versiones**: automatización y full-stack, español e inglés, en PDF y Word.
+- **Portafolio navegable**: lista de proyectos con descripción, stack y enlaces a demo y código.
+- **Agenda entrevistas reales**: modalidad (videollamada, llamada o mensaje), fecha, hora, nombre,
+  **empresa** y **vacante**; valida la zona horaria y evita dobles reservas.
+- **Responde preguntas con Gemini** usando el contexto del perfil, sin inventar experiencia ni datos.
 - **Respaldo sin IA**: si no hay clave, se agota la cuota o Gemini falla, contesta con preguntas
   frecuentes locales. El menú y las citas nunca dependen del modelo.
-- **Avisa al dueño** por WhatsApp cuando entra una cita o alguien pide un asesor.
+- **Avisa al dueño** por WhatsApp cuando entra una cita (con empresa y vacante) o alguien deja un mensaje.
 - **Mismo motor en tres canales**: webhook de WhatsApp, demo web y consola.
 
 ## Por qué esta arquitectura
@@ -37,7 +66,7 @@ citas, con el mismo motor en WhatsApp, web y consola.
 | **Menú determinista + IA** | La IA conversa; el flujo crítico (citas) es código comprobable. Menos alucinaciones y menos latencia. |
 | **Adaptador de almacenamiento** | Firestore en producción, memoria en local y pruebas. Cambiar a Postgres es implementar una interfaz. |
 | **Fechas como texto local** (`YYYY-MM-DD` / `HH:mm`) | El servidor corre en UTC; el negocio no. Se evitan bugs de zona horaria y de horario de verano. |
-| **Múltiples CVs**: El bot ofrece hasta 6 versiones (3 CVs × 2 idiomas × 2 formatos) | Permite al reclutador elegir el formato y idioma que necesita. |
+| **Múltiples CVs**: 8 versiones (2 perfiles × 2 idiomas × 2 formatos) | Permite al reclutador elegir el perfil, el idioma y el formato que necesita en un solo paso. |
 
 ## Stack
 
@@ -53,7 +82,7 @@ citas, con el mismo motor en WhatsApp, web y consola.
 ## Cómo funciona
 
 ```
-WhastApp ──webhook firmado──┐
+WhatsApp ──webhook firmado──┐
 Demo web ──/api/demo────────┼──► motor de conversación ──► menú
 Consola  ──CLI──────────────┘            │                  ├── agenda / cancela citas
                                           │                  └── FAQ
@@ -63,8 +92,8 @@ Consola  ──CLI──────────────┘            │  
 
 1. Meta envía el mensaje al webhook y NEXO BOT valida la firma HMAC-SHA256.
 2. El motor busca la conversación por número y decide: menú, cita o texto libre.
-3. Si es texto libre, Gemini responde con el contexto del negocio; si falla, entra el buscador de FAQ.
-4. Las citas se guardan en Firestore y el dueño recibe un aviso por WhatsApp.
+3. Si es texto libre, Gemini responde con el contexto del perfil; si falla, entra el buscador de FAQ.
+4. Las citas se guardan en Firestore y el dueño recibe un aviso por WhatsApp con empresa y vacante.
 
 ## Estructura
 
@@ -74,7 +103,7 @@ src/
   cli/                      Chat de terminal
   config/
     env.js                  Carga del .env desde cualquier directorio
-    negocio.js              Datos del negocio (servicios, horarios, FAQ)
+    negocio.js              Perfil, CVs, proyectos, modalidades y FAQ
   services/
     conversacion.js         Motor: estados, intenciones y flujo de citas
     mensajes.js             Textos que ve el cliente
@@ -83,12 +112,13 @@ src/
     ia.js                   Gemini con timeout, reintentos y fallback
     respuestas.js           Buscador de preguntas frecuentes
     whatsapp.js             Firma, envío, deduplicación y parseo del webhook
-public/                     Demo web, privacidad y términos
+public/                     Demo web, CVs en PDF/Word, privacidad y términos
 scripts/desplegar.js        Despliegue idempotente en Cloud Run
-test/bot.test.js            12 pruebas del motor
+test/bot.test.js            16 pruebas del motor
 docs/
   WHATSAPP-META.md          Guía para conectar un número real
   CV.md                     Texto listo para el currículum
+  screenshots/              Capturas usadas en este README
 ```
 
 ## Empezar en local
@@ -109,7 +139,7 @@ Otros comandos:
 
 ```bash
 npm run chat       # conversación en la terminal
-npm test           # 12 pruebas automatizadas
+npm test           # 16 pruebas automatizadas
 npm run deploy     # despliegue en Cloud Run
 ```
 
@@ -164,7 +194,7 @@ mueve `GEMINI_API_KEY` y `WHATSAPP_TOKEN` a **Secret Manager** y usa `--set-secr
 | `GET` | `/` y `/demo` | Demo web |
 | `POST` | `/api/demo` | Procesa un mensaje `{ sesion, mensaje }` |
 | `POST` | `/api/demo/reiniciar` | Reinicia la conversación de la demo |
-| `GET` | `/api/negocio` | Datos públicos del negocio |
+| `GET` | `/api/negocio` | Datos públicos del perfil |
 | `GET` | `/webhook` | Verificación de Meta (`hub.challenge`) |
 | `POST` | `/webhook` | Recepción de mensajes de WhatsApp |
 | `GET` | `/health` | Estado de IA, WhatsApp y almacenamiento |
@@ -182,12 +212,19 @@ Cubren:
 - Horas como las escribe la gente («4», «4pm», «a las 11», «4 de la tarde»).
 - Horarios ocupados que no se ofrecen.
 - Bloqueo transaccional para que un horario no se reserve dos veces.
-- Flujo completo: menú → CV → formato → descarga / servicio → fecha → hora → nombre → confirmación.
+- Flujo completo: modalidad → fecha → hora → nombre → empresa → vacante → confirmación.
+- Descarga del CV correcto en un solo paso (perfil, idioma y formato).
+- Lista de proyectos y detalle al elegir un número.
+- «cita» inicia el agendamiento directamente.
+- Preguntas del perfil respondidas sin repetir la ficha.
+- «dejar un mensaje» abre el buzón.
 - Cancelación con código, aunque el cliente envíe solo el código.
 - Reinicio con «menú».
 - Respaldo de preguntas frecuentes sin IA.
 - Aislamiento entre la demo y WhatsApp.
-- 12 pruebas automatizadas.
+- Normalización de destinos para México, Argentina y Brasil.
+- Formato de fecha y hora en español.
+- 16 pruebas automatizadas.
 
 ## Costes
 
@@ -201,9 +238,16 @@ Cubren:
 
 ## Para el CV
 
-En el menú del bot, los reclutadores pueden elegir:
+En el menú del bot (opción **1️⃣ 📄 Ver CV**) los reclutadores eligen una de 8 versiones en un solo paso:
 
-1. **Qué CV deseas descargar?** (1. Automation EN, 2. Automation ES, 3. Automation EN Word, 4. Automation ES Word, 5. Full-Stack EN PDF, 6. Full-Stack ES PDF, 7. Full-Stack EN Word, 8. Full-Stack ES Word)
+1. CV Automatización · Español PDF
+2. CV Automatización · Español Word (`.docx`)
+3. CV Automation · Inglés (EN) PDF
+4. CV Automation · Inglés (EN) Word (`.docx`)
+5. CV Full-Stack · Español PDF
+6. CV Full-Stack · Español Word (`.docx`)
+7. CV Full-Stack · Inglés (EN) PDF
+8. CV Full-Stack · Inglés (EN) Word (`.docx`)
 
 Cada uno tiene su URL en `public/cv/`. Los archivos son:
 
@@ -220,15 +264,16 @@ Cada uno tiene su URL en `public/cv/`. Los archivos son:
 
 ## English summary
 
-NEXO BOT is an AI-powered WhatsApp assistant for job seekers. It combines a deterministic
-menu with Gemini for open questions, offers 6 CV download options (3 CVs × 2 languages × 2 formats),
-books and cancels appointments with timezone-safe availability checks, and stores conversations in
-Firestore. The same engine powers the WhatsApp webhook, a web demo and a CLI. It runs on Google
-Cloud Run at zero cost within free tiers.
+NEXO BOT is an AI-powered WhatsApp assistant for job seekers. Recruiters can download the CV in
+8 versions (automation or full-stack, Spanish or English, PDF or Word), browse the project
+portfolio, and book an interview with modality, company and vacancy. It combines a deterministic
+menu with Gemini for open questions, books and cancels appointments with timezone-safe
+availability checks, and stores conversations in Firestore. The same engine powers the WhatsApp
+webhook, a web demo and a CLI. It runs on Google Cloud Run at zero cost within free tiers.
 
 ```bash
 npm install && npm run dev     # http://localhost:8080/demo
-npm test                        # 12 tests
+npm test                        # 16 tests
 npm run deploy                  # Cloud Run
 ```
 
