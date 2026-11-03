@@ -4,8 +4,9 @@ La demo web funciona sin configurar nada. Para que el bot responda en WhatsApp s
 **WhatsApp Cloud API**, la vía oficial de Meta. No requiere servidores propios: Meta llama al
 webhook de NEXO BOT en Cloud Run.
 
-> Tiempo estimado: 20 minutos. Coste: **0 USD** dentro de la capa gratuita (las conversaciones de
-> servicio que inicia el cliente son gratuitas; Meta cobra las plantillas proactivas).
+> Tiempo estimado: 25 minutos. Coste: Meta incluye **1,000 mensajes de servicio gratis al mes** por
+> número (desde octubre de 2026); después aplica su tarifa. NEXO BOT solo responde mensajes
+> entrantes, así que no necesita plantillas aprobadas.
 
 ---
 
@@ -81,7 +82,8 @@ Si la verificación falla:
 1. En **API Setup → To**, agrega tu número personal como destinatario de prueba y verifícalo.
 2. Escanea el QR o usa el botón **Send message** de Meta para iniciar la conversación.
 3. Escribe `hola`. Deberías recibir el menú.
-4. Prueba: `2` → servicio → `mañana` → horario → tu nombre → `1`.
+4. Prueba `1` (CV), `2` (proyectos) y `3` (entrevista → modalidad → fecha → hora → nombre →
+   empresa → vacante → confirmación).
 
 En Cloud Run verás los avisos si configuraste `OWNER_PHONE`.
 
@@ -112,18 +114,61 @@ gcloud run services update nexo-bot \
 
 > Guarda el token en un lugar seguro. Cualquiera con ese token puede enviar mensajes en tu nombre.
 
-## 7. Pasar a producción con un número real
+## 7. Pasar del número de prueba a tu número real
 
-1. **WhatsApp → API Setup → Add phone number**. El número no debe estar registrado en la app
-   normal de WhatsApp; si lo está, primero elimina la cuenta desde la app.
-2. Verifica el número por SMS o llamada.
-3. Completa la **verificación del negocio** en Meta Business.
-4. Agrega un método de pago en **WhatsApp Manager → Billing**.
-5. Solicita **Advanced Access** para `whatsapp_business_messaging` si vas a atender a clientes
-   que no están en la lista de prueba.
-6. Para iniciar conversaciones fuera de la ventana de 24 h necesitas **plantillas** aprobadas
-   (`hello_world` es la de ejemplo). NEXO BOT responde a mensajes entrantes, así que no las
-   necesita para el flujo actual.
+> El número debe estar **libre de WhatsApp**: no puede tener la app normal ni WhatsApp Business
+> activos. Si lo usas, haz copia de seguridad y elimina la cuenta desde la app. No borres tu
+> cuenta de Facebook. La eliminación de WhatsApp no afecta los SMS ni las llamadas del número.
+
+1. **Agrega un método de pago** (obligatorio para un número real):
+   [business.facebook.com](https://business.facebook.com) → **Configuración del negocio → Pagos →
+   Métodos de pago**. Sin tarjeta, Meta rechaza los envíos con el error `131042`.
+2. **Agrega el número**: [developers.facebook.com/apps/1802805950965378](https://developers.facebook.com/apps/1802805950965378)
+   → **WhatsApp → API Setup → Add phone number** (o **WhatsApp Manager → Números de teléfono →
+   Agregar**). Elige un nombre visible, por ejemplo `Ignacio Maldonado` o `NEXO BOT`.
+3. **Verifícalo** por SMS o llamada. En la API debe quedar `code_verification_status: VERIFIED`.
+4. **Regístralo para Cloud API**. No hay botón: es una llamada a la API. Elige un PIN de 6 dígitos
+   y guárdalo (lo necesitarás para administrar el número):
+
+   ```bash
+   curl -X POST "https://graph.facebook.com/v25.0/TU_PHONE_NUMBER_ID/register" \
+     -H "Authorization: Bearer TU_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"messaging_product":"whatsapp","pin":"123456"}'
+   ```
+
+5. **Suscribe la app a la cuenta de WhatsApp** si el número quedó en una cuenta nueva:
+
+   ```bash
+   curl -X POST "https://graph.facebook.com/v25.0/TU_WABA_ID/subscribed_apps" \
+     -H "Authorization: Bearer TU_TOKEN"
+   ```
+
+6. **Asigna el número al usuario del sistema** si tu token no lo ve: Configuración del negocio →
+   **Usuarios → Usuarios del sistema → NEXO → Agregar activos → Cuentas de WhatsApp** → permiso
+   total. Vuelve a generar el token si es necesario.
+
+7. **Actualiza el Phone Number ID** en `.env` y despliega:
+
+   ```env
+   WHATSAPP_PHONE_NUMBER_ID=NUEVO_PHONE_NUMBER_ID
+   ```
+
+   ```bash
+   npm run deploy
+   ```
+
+8. **Prueba**: desde tu número personal escribe `hola` al número del bot. El webhook ya está
+   configurado a nivel de app, así que **no cambia**.
+
+Notas:
+
+- El número de prueba se puede conservar para pruebas; no estorba.
+- La **verificación del negocio** no es obligatoria para el límite inicial de 250 usuarios
+  únicos/24 h, pero conviene hacerla para subir de nivel y obtener el nombre verificado.
+- Las respuestas dentro de la ventana de 24 h no consumen el límite de mensajes iniciados por el
+  negocio.
+- El PIN de 6 dígitos es la verificación en dos pasos del número; no lo compartas.
 
 ## 8. Probar el webhook en local
 
@@ -153,10 +198,11 @@ Y registra `https://xxxx.ngrok-free.app/webhook` como callback. El resto del flu
 
 | Servicio | Capa gratuita | Qué pasa al superarla |
 |---|---|---|
-| WhatsApp Cloud API | Conversaciones de servicio gratuitas | Meta cobra las plantillas proactivas según el país |
+| WhatsApp Cloud API | 1,000 mensajes de servicio gratis al mes por número | Meta cobra por mensaje según el país |
 | Cloud Run | 2 M peticiones y 180k vCPU-s/mes | ~0.000024 USD por vCPU-s |
 | Firestore | 1 GiB, 50k lecturas/día | ~0.06 USD por 100k lecturas |
 | Gemini API | Cuota gratuita de AI Studio | Se puede limitar o pasar a pago |
 | Cloud Build | 120 min/día | ~0.003 USD/minuto |
 
-Para una demo de portafolio o un negocio pequeño, el coste mensual es **0**.
+Para una demo de portafolio o un negocio pequeño, si no superas las 1,000 respuestas de servicio
+al mes, el coste mensual es **0** (la tarjeta queda registrada, pero no se cobra).

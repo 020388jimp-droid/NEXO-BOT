@@ -230,7 +230,7 @@ Cubren:
 
 | Servicio | Capa gratuita | Coste esperado |
 |---|---|---|
-| WhatsApp Cloud API | Conversaciones de servicio gratuitas | 0 (las plantillas proactivas se cobran) |
+| WhatsApp Cloud API | 1,000 mensajes de servicio gratis al mes por número | Tarifa de Meta por mensaje |
 | Cloud Run | 2 M peticiones/mes | 0 |
 | Firestore | 1 GiB y 50k lecturas/día | 0 |
 | Gemini | Cuota gratuita de AI Studio | 0 |
