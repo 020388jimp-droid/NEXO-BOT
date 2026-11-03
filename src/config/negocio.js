@@ -71,7 +71,7 @@ const proyectosBase = [
       'Bot conversacional con menú determinista, respuestas con Gemini, agenda de citas, notificaciones al dueño y persistencia en Firestore. Corre en Google Cloud Run y usa la WhatsApp Cloud API.',
     stack: 'Node.js · WhatsApp Cloud API · Gemini · Firestore · Cloud Run',
     demo: `${BASE_URL}/demo`,
-    codigo: '',
+    codigo: 'https://github.com/020388jimp-droid/NEXO-BOT',
   },
 ];
 
