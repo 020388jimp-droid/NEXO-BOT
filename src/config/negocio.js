@@ -153,6 +153,7 @@ const faqsBase = [
 
 export const NEGOCIO = {
   nombre: 'José Ignacio Maldonado Pérez',
+  nombreCorto: 'Ignacio Maldonado',
   marca: 'NEXO',
   rol: 'Desarrollador Full-Stack y Automatización con IA',
   descripcion:

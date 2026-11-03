@@ -512,11 +512,11 @@
       </div>
 
       <div class="sugerencias" id="sugerencias">
-        <button class="chip" data-mensaje="1️⃣ Ver CV (PDF o Word)">Ver CV</button>
-        <button class="chip" data-mensaje="2️⃣ Proyectos y portafolio">Proyectos</button>
-        <button class="chip" data-mensaje="3️⃣ Agendar entrevista">Entrevista</button>
-        <button class="chip" data-mensaje="4️⃣ Perfil y preguntas frecuentes">Perfil</button>
-        <button class="chip" data-mensaje="5️⃣ Dejar un mensaje">Mensaje</button>
+        <button class="chip" data-mensaje="1️⃣ 📄 Ver CV (PDF o Word)">Ver CV</button>
+        <button class="chip" data-mensaje="2️⃣ 🚀 Proyectos y portafolio">Proyectos</button>
+        <button class="chip" data-mensaje="3️⃣ 📅 Agendar entrevista">Entrevista</button>
+        <button class="chip" data-mensaje="4️⃣ 👨‍💻 Perfil y preguntas frecuentes">Perfil</button>
+        <button class="chip" data-mensaje="5️⃣ ✉️ Dejar un mensaje">Mensaje</button>
       </div>
 
       <form class="barra" id="formulario" autocomplete="off">
@@ -585,7 +585,7 @@
       const esperar = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
 
       function bienvenida() {
-        agregar('bot', '¡Hola! 👋 Soy *NEXO*, el asistente profesional de *' + (negocio?.nombre || 'tu negocio') + '*.\n\n1️⃣ Ver CV (PDF o Word)\n2️⃣ Proyectos y portafolio\n3️⃣ Agendar entrevista\n4️⃣ Perfil y preguntas frecuentes\n5️⃣ Dejar un mensaje\n\nResponde con el número de la opción o escríbeme tu consulta.');
+        agregar('bot', '🤖 *NEXO BOT*\n¡Hola! 👋 Soy el asistente virtual de *' + (negocio?.nombreCorto || 'Ignacio Maldonado') + '*.\n¿En qué te puedo ayudar hoy?\n\n1️⃣ 📄 Ver CV (PDF o Word)\n2️⃣ 🚀 Proyectos y portafolio\n3️⃣ 📅 Agendar entrevista\n4️⃣ 👨‍💻 Perfil y preguntas frecuentes\n5️⃣ ✉️ Dejar un mensaje\n\nResponde con el número 👇 o escríbeme tu consulta.');
       }
 
       function limpiarChat() {

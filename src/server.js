@@ -127,6 +127,7 @@ app.post('/api/demo/reiniciar', async (req, res) => {
 app.get('/api/negocio', (_req, res) => {
   res.json({
     nombre: NEGOCIO.nombre,
+    nombreCorto: NEGOCIO.nombreCorto,
     descripcion: NEGOCIO.descripcion,
     telefono: NEGOCIO.telefono,
     correo: NEGOCIO.correo,

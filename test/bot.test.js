@@ -204,7 +204,7 @@ test('el menú reinicia la conversación en cualquier momento', async () => {
 
   await procesarMensaje({ telefono, texto: 'agendar cita' });
   const r = await procesarMensaje({ telefono, texto: 'menú' });
-  assert.match(r.respuestas[0], /1️⃣ Ver CV/);
+  assert.match(r.respuestas[0], /1️⃣ 📄 Ver CV/);
   assert.equal(r.estado, 'menu');
 });
 
@@ -262,6 +262,15 @@ test('las preguntas del perfil se responden sin repetir la ficha', async () => {
 
   r = await procesarMensaje({ telefono, texto: '¿Qué stack dominas?' });
   assert.doesNotMatch(r.respuestas[0], /Perfil profesional/);
+});
+
+test('escribir dejar un mensaje abre el buzón', async () => {
+  reiniciarAlmacenParaPruebas();
+  const telefono = '5215500001111';
+
+  const r = await procesarMensaje({ telefono, texto: 'quiero dejar un mensaje' });
+  assert.match(r.respuestas[0], /Cuéntame qué mensaje/);
+  assert.equal(r.estado, 'avisar_propia');
 });
 
 test('responde preguntas frecuentes sin IA', async () => {

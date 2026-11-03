@@ -586,6 +586,11 @@ async function enrutar(conversacion, texto, normalizado) {
     return [mensajes.textoServicios()];
   }
 
+  if (INTENCIONES.mensaje.test(normalizado)) {
+    conversacion.estado = ESTADOS.AVISAR_PROPIA;
+    return [mensajes.textoPedirMensaje()];
+  }
+
   if (conversacion.estado === ESTADOS.INICIO) {
     // En el primer mensaje se saluda con el menú, pero si la persona llega
     // con una pregunta concreta se intenta responder directamente.

@@ -6,18 +6,18 @@ import { formatearFechaLarga, formatearHora } from './fechas.js';
 
 export function textoMenu({ saludo = true } = {}) {
   const encabezado = saludo
-    ? `¡Hola! 👋 Soy *NEXO*, el asistente profesional de *${NEGOCIO.nombre}*.`
-    : '¿Qué más puedo hacer por ti?';
+    ? `🤖 *NEXO BOT*\n¡Hola! 👋 Soy el asistente virtual de *${NEGOCIO.nombreCorto}*.\n¿En qué te puedo ayudar hoy?`
+    : `🤖 *NEXO BOT*\n¡Hola! 👋 Soy el asistente virtual de *${NEGOCIO.nombreCorto}*.\n¿En qué más te puedo ayudar hoy?`;
 
   return `${encabezado}
 
-1️⃣ Ver CV (PDF o Word)
-2️⃣ Proyectos y portafolio
-3️⃣ Agendar entrevista
-4️⃣ Perfil y preguntas frecuentes
-5️⃣ Dejar un mensaje
+1️⃣ 📄 Ver CV (PDF o Word)
+2️⃣ 🚀 Proyectos y portafolio
+3️⃣ 📅 Agendar entrevista
+4️⃣ 👨‍💻 Perfil y preguntas frecuentes
+5️⃣ ✉️ Dejar un mensaje
 
-Responde con el número de la opción o escríbeme tu consulta.`;
+Responde con el número 👇 o escríbeme tu consulta.`;
 }
 
 export function textoServicios() {
