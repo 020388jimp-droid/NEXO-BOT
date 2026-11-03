@@ -159,7 +159,7 @@ export const NEGOCIO = {
   descripcion:
     'Ingeniero en Sistemas Computacionales con más de tres años de experiencia en redes, pruebas y docencia. Desarrollo aplicaciones full-stack y automatizaciones con IA, de la idea al despliegue en Google Cloud.',
   zona: process.env.BUSINESS_TZ || 'America/Mexico_City',
-  telefono: '+52 33 2977 7561',
+  telefono: '+52 1 33 2977 7561',
   correo: 'nacho020388@gmail.com',
   ubicacion: 'Guadalajara, Jalisco, México',
   direccion: 'Guadalajara, Jalisco, México',
