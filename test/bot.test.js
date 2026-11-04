@@ -21,7 +21,7 @@ const {
   slotsDelDia,
   sumarDias,
 } = await import('../src/services/fechas.js');
-const { variantesDestino } = await import('../src/services/whatsapp.js');
+const { esKeepalive, variantesDestino } = await import('../src/services/whatsapp.js');
 
 const siguienteDiaAbierto = () => {
   for (let dias = 1; dias <= 14; dias += 1) {
@@ -279,6 +279,17 @@ test('responde preguntas frecuentes sin IA', async () => {
 
   const r = await procesarMensaje({ telefono, texto: '¿Aceptas trabajo remoto?' });
   assert.match(r.respuestas[0], /remoto, híbrido o presencial en Guadalajara/i);
+});
+
+test('detecta el keepalive del dueño sin confundirlo con otros mensajes', () => {
+  const token = '__nexo_keepalive__';
+  const owner = '523342672004';
+
+  assert.equal(esKeepalive({ de: '5213342672004', texto: token, token, owner }), true);
+  assert.equal(esKeepalive({ de: '523342672004', texto: ` ${token} `, token, owner }), true);
+  assert.equal(esKeepalive({ de: '5213342672004', texto: 'hola', token, owner }), false);
+  assert.equal(esKeepalive({ de: '5215511111111', texto: token, token, owner }), false);
+  assert.equal(esKeepalive({ de: '5213342672004', texto: token, token: '', owner }), false);
 });
 
 test('variantes de destino para México, Argentina y Brasil', () => {

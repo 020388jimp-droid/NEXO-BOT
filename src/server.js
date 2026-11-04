@@ -11,6 +11,7 @@ import { procesarMensaje, reiniciarConversacion } from './services/conversacion.
 import { iaDisponible } from './services/ia.js';
 import {
   enviarTexto,
+  esKeepalive,
   esMensajeNuevo,
   extraerMensajes,
   firmaValida,
@@ -26,6 +27,7 @@ const publico = path.join(raiz, 'public');
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
+const KEEPALIVE_TOKEN = process.env.KEEPALIVE_TOKEN || '__nexo_keepalive__';
 
 app.set('trust proxy', true);
 app.disable('x-powered-by');
@@ -219,6 +221,22 @@ app.post('/webhook', async (req, res) => {
 
     for (const mensaje of mensajes) {
       if (!esMensajeNuevo(mensaje.id)) continue;
+
+      // El dueño (o su dispositivo vinculado) envía un ping cada 12 h para
+      // mantener abierta la ventana de 24 h. No respondemos para no llenar
+      // el chat de menús; el mensaje entrante ya cuenta para Meta.
+      if (
+        mensaje.soportado &&
+        esKeepalive({
+          de: mensaje.de,
+          texto: mensaje.texto,
+          token: KEEPALIVE_TOKEN,
+          owner: process.env.OWNER_PHONE,
+        })
+      ) {
+        console.log(`🔋 Keepalive de ${mensaje.de}: ventana de 24 h abierta sin responder.`);
+        continue;
+      }
 
       try {
         if (!mensaje.soportado) {

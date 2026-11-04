@@ -112,6 +112,19 @@ export function variantesDestino(telefono) {
 }
 
 /**
+ * Detecta el "ping" que envía el dispositivo vinculado del dueño para
+ * mantener abierta la ventana de 24 h. No debe generar respuesta, pero el
+ * mensaje entrante sí cuenta para que Meta permita los avisos gratuitos.
+ */
+export function esKeepalive({ de, texto, token, owner }) {
+  const esperado = String(token || '').trim();
+  if (!esperado || String(texto || '').trim() !== esperado) return false;
+
+  const origen = String(de || '').replace(/\D/g, '');
+  return variantesDestino(owner).includes(origen);
+}
+
+/**
  * Envía texto por la Graph API. Devuelve true/false: nunca lanza, porque un
  * fallo de Meta no debe tumbar el webhook.
  */
